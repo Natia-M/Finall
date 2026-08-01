@@ -31,7 +31,7 @@ struct FavouritesView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .frame(width: 190)
+                        .frame(width: 490)
 
                         Spacer()
                     }

@@ -10,7 +10,11 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
 
     private let columns = Array(
-        repeating: GridItem(.flexible(), spacing: 10),
+        repeating: GridItem(
+            .flexible(),
+            spacing: 10,
+            alignment: .top
+        ),
         count: 3
     )
 
@@ -67,7 +71,7 @@ struct PosterGridItem: View {
         VStack(alignment: .leading, spacing: 6) {
             PosterImage(
                 url: movie.posterURL,
-                height: 138
+                height: 150
             )
 
             Text(movie.title)
@@ -76,7 +80,8 @@ struct PosterGridItem: View {
                 .foregroundStyle(.white)
                 .frame(
                     maxWidth: .infinity,
-                    alignment: .leading
+                    minHeight: 30,
+                    alignment: .topLeading
                 )
         }
     }

@@ -30,25 +30,97 @@ struct RootView: View {
     }
 }
 
+enum AppTab {
+    case home
+    case search
+    case favourites
+}
+
 struct MainTabView: View {
+    @State private var selectedTab: AppTab = .home
+
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
+        Group {
+            switch selectedTab {
+            case .home:
+                HomeView()
 
-            SearchView()
-                .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
+            case .search:
+                SearchView()
 
-            FavouritesView()
-                .tabItem {
-                    Label("Favourites", systemImage: "bookmark")
-                }
+            case .favourites:
+                FavouritesView()
+            }
         }
-        .tint(.cyan)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CustomTabBar(selectedTab: $selectedTab)
+        }
+    }
+}
+
+struct CustomTabBar: View {
+    @Binding var selectedTab: AppTab
+
+    var body: some View {
+        HStack {
+            tabButton(
+                title: "Home",
+                icon: "house",
+                selectedIcon: "house",
+                tab: .home
+            )
+
+            Spacer()
+
+            tabButton(
+                title: "Search",
+                icon: "magnifyingglass",
+                selectedIcon: "magnifyingglass",
+                tab: .search
+            )
+
+            Spacer()
+
+            tabButton(
+                title: "Favourites",
+                icon: "bookmark",
+                selectedIcon: "bookmark.fill",
+                tab: .favourites
+            )
+        }
+        .padding(.horizontal, 36)
+        .frame(height: 62)
+        .background(Color.movieBlack)
+        }
+    
+
+    private func tabButton(
+        title: String,
+        icon: String,
+        selectedIcon: String,
+        tab: AppTab
+    ) -> some View {
+        Button {
+            selectedTab = tab
+        } label: {
+            VStack(spacing: 4) {
+                Image(
+                    systemName: selectedTab == tab
+                    ? selectedIcon
+                    : icon
+                )
+                .font(.system(size: 16))
+
+                Text(title)
+                    .font(.system(size: 10))
+            }
+            .foregroundStyle(
+                selectedTab == tab
+                ? Color.cyan
+                : Color.gray
+            )
+            .frame(width: 64)
+        }
     }
 }
 
@@ -58,15 +130,10 @@ struct SplashView: View {
             Color.movieBlack
                 .ignoresSafeArea()
 
-            VStack(spacing: 18) {
-                Image(systemName: "popcorn.fill")
-                    .font(.system(size: 82))
-                    .foregroundStyle(.white, .yellow)
-
-                Text("MOVIES")
-                    .font(.title.bold())
-                    .tracking(5)
-            }
+            Image("SplashPopcorn")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 210)
         }
     }
 }

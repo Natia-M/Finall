@@ -8,25 +8,54 @@ import SwiftUI
 
 struct SearchView: View {
     @StateObject private var viewModel = SearchViewModel()
+    @State private var showSortMenu = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 14) {
-                searchBar
+            ZStack(alignment: .topTrailing) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Search")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
 
-                if viewModel.isLoading {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
-                } else if viewModel.hasSearched &&
-                            viewModel.movies.isEmpty {
-                    EmptySearchView()
-                } else {
-                    SearchResultsList(movies: viewModel.movies)
+                    searchBar
+
+                    if viewModel.isLoading {
+                        Spacer()
+
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+
+                        Spacer()
+
+                    } else if viewModel.hasSearched &&
+                                viewModel.movies.isEmpty {
+                        SearchEmptyState()
+
+                    } else {
+                        searchResults
+                    }
+                }
+                .padding(.top, 12)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
+
+                if showSortMenu {
+                    SortMenu(
+                        selection: $viewModel.sortOption
+                    ) {
+                        showSortMenu = false
+                    }
+                    .padding(.top, 82)
+                    .padding(.trailing, 16)
                 }
             }
             .background(Color.movieBlack)
-            .navigationTitle("Search")
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Movie.self) { movie in
                 MovieDetailView(movie: movie)
             }
@@ -35,58 +64,42 @@ struct SearchView: View {
 
     private var searchBar: some View {
         HStack(spacing: 10) {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-
+            HStack(spacing: 8) {
                 TextField(
                     "Search movies",
                     text: $viewModel.query
                 )
+                .font(.system(size: 13))
                 .onChange(of: viewModel.query) { _, _ in
                     viewModel.queryChanged()
                 }
-                .submitLabel(.search)
-                .onSubmit {
-                    Task {
-                        await viewModel.search()
-                    }
-                }
+
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.gray)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .frame(height: 38)
             .background(Color.cardGray)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: 9))
 
-            Menu {
-                Picker(
-                    "Sort",
-                    selection: $viewModel.sortOption
-                ) {
-                    ForEach(SortOption.allCases) { option in
-                        Text(option.rawValue)
-                            .tag(option)
-                    }
-                }
+            Button {
+                showSortMenu.toggle()
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 20))
+                    .foregroundStyle(.gray)
             }
         }
         .padding(.horizontal, 16)
     }
-}
 
-struct SearchResultsList: View {
-    let movies: [Movie]
-
-    var body: some View {
+    private var searchResults: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(movies) { movie in
+            LazyVStack(spacing: 10) {
+                ForEach(viewModel.movies) { movie in
                     NavigationLink(value: movie) {
-                        SearchRow(movie: movie)
+                        SearchResultRow(movie: movie)
                     }
                     .buttonStyle(.plain)
                 }
@@ -96,55 +109,132 @@ struct SearchResultsList: View {
     }
 }
 
-struct SearchRow: View {
+struct SearchResultRow: View {
     let movie: Movie
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             PosterImage(
                 url: movie.posterURL,
-                height: 105,
-                width: 72
+                height: 142,
+                width: 96
             )
 
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(movie.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(.white)
                     .lineLimit(2)
 
-                Label(movie.year, systemImage: "calendar")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                infoRow(
+                    icon: "star",
+                    text: movie.imdbRating ?? "N/A",
+                    color: .orange
+                )
 
-                Text(movie.genre ?? "Movie")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                infoRow(
+                    icon: "ticket",
+                    text: movie.genre ?? "Movie",
+                    color: .white
+                )
+
+                infoRow(
+                    icon: "calendar",
+                    text: movie.year,
+                    color: .white
+                )
+
+                infoRow(
+                    icon: "clock",
+                    text: movie.runtime ?? "N/A",
+                    color: .white
+                )
             }
 
             Spacer()
         }
-        .padding(8)
-        .background(Color.cardGray.opacity(0.65))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.vertical, 4)
+    }
+
+    private func infoRow(
+        icon: String,
+        text: String,
+        color: Color
+    ) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .frame(width: 18)
+
+            Text(text)
+                .font(.system(size: 16))
+        }
+        .foregroundStyle(color)
     }
 }
 
-struct EmptySearchView: View {
+struct SearchEmptyState: View {
     var body: some View {
         Spacer()
 
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Text("Oh No Isn’t This So Embarrassing?")
-                .font(.subheadline.weight(.bold))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
 
             Text("I cannot find any movie with this name.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 10))
+                .foregroundStyle(.gray)
         }
-        .multilineTextAlignment(.center)
-        .padding()
+        .frame(maxWidth: .infinity)
 
         Spacer()
+    }
+}
+
+struct SortMenu: View {
+    @Binding var selection: SortOption
+    let closeMenu: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            sortButton(.name)
+            Divider().overlay(Color.white.opacity(0.08))
+
+            sortButton(.genre)
+            Divider().overlay(Color.white.opacity(0.08))
+
+            sortButton(.year)
+        }
+        .frame(width: 120)
+        .background(Color.cardGray)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func sortButton(
+        _ option: SortOption
+    ) -> some View {
+        Button {
+            selection = option
+            closeMenu()
+        } label: {
+            HStack(spacing: 8) {
+                Image(
+                    systemName: selection == option
+                    ? "checkmark"
+                    : ""
+                )
+                .font(.system(size: 10))
+                .frame(width: 12)
+
+                Text(option.rawValue)
+                    .font(.system(size: 12))
+
+                Spacer()
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+        }
     }
 }

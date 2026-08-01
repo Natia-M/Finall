@@ -25,8 +25,10 @@ struct Movie: Identifiable, Codable, Hashable {
     let imdbID: String
     let type: String
     let poster: String
-    var genre: String?
 
+    var genre: String?
+    var imdbRating: String? = nil
+    var runtime: String? = nil
     var id: String {
         imdbID
     }
